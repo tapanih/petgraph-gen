@@ -65,6 +65,34 @@ pub fn empty_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, I
     graph
 }
 
+/// Generates a star graph with a single center node connected to `n` other nodes. The resulting
+/// graph has `n + 1` nodes and `n` edges.
+///
+/// # Examples
+/// ```
+/// use petgraph_gen::star_graph;
+/// use petgraph::{Directed, Graph, Undirected};
+/// use petgraph::graph::NodeIndex;
+/// use petgraph::visit::EdgeRef;
+///
+/// let graph: Graph<(), ()> = star_graph(10);
+/// assert_eq!(graph.node_count(), 11);
+/// assert_eq!(graph.edge_count(), 10);
+/// let center_node = NodeIndex::new(0);
+/// for edge in graph.edges(center_node) {
+///    assert_eq!(edge.source(), center_node);
+/// }
+///
+pub fn star_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
+    let mut graph = Graph::with_capacity(n + 1, n);
+    let center = graph.add_node(());
+    (0..n).for_each(|_| {
+        let node = graph.add_node(());
+        graph.add_edge(center, node, ());
+    });
+    graph
+}
+
 /// Generates a Erdős-Rényi graph with `n` nodes. Edges are selected with probability `p` from the set
 /// of all possible edges.
 pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
@@ -137,8 +165,10 @@ pub fn barabasi_albert_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
 
 #[cfg(test)]
 mod tests {
+    use petgraph::adj::NodeIndex;
     use super::*;
     use petgraph::graph::{DiGraph, UnGraph};
+    use petgraph::visit::EdgeRef;
     use rand::rngs::mock::StepRng;
 
     trait EdgeIndexTuples<Ty: EdgeType, Ix: IndexType> {
@@ -159,6 +189,19 @@ mod tests {
         let graph: DiGraph<(), ()> = empty_graph(9);
         assert_eq!(graph.node_count(), 9);
         assert_eq!(graph.edge_count(), 0);
+    }
+
+    #[test]
+    fn test_star_graph() {
+        let graph: DiGraph<(), ()> = star_graph(9);
+        assert_eq!(graph.node_count(), 10);
+        assert_eq!(graph.edge_count(), 9);
+
+        let center_node = NodeIndex::new(0);
+        assert_eq!(graph.edges(center_node).count(), 9);
+        for edge in graph.edges(center_node) {
+            assert_eq!(edge.source(), center_node);
+        }
     }
 
     #[test]
