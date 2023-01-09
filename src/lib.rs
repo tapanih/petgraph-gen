@@ -71,7 +71,6 @@ pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
         });
     } else {
         nodes.iter().combinations(2).for_each(|edge| {
-            println!("{:?}", edge);
             if bernoulli_distribution.sample(rng) {
                 graph.add_edge(*edge[0], *edge[1], ());
             }
