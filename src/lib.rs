@@ -46,6 +46,25 @@ pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty
     graph
 }
 
+/// Generates an empty graph with `n` nodes and no edges.
+///
+/// # Examples
+/// ```
+/// use petgraph::Graph;
+/// use petgraph_gen::empty_graph;
+///
+/// let graph: Graph<(), ()> = empty_graph(5);
+/// assert_eq!(graph.node_count(), 5);
+/// assert_eq!(graph.edge_count(), 0);
+/// ```
+pub fn empty_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
+    let mut graph = Graph::with_capacity(n, 0);
+    (0..n).for_each(|_| {
+        graph.add_node(());
+    });
+    graph
+}
+
 /// Generates a Erdős-Rényi graph with `n` nodes. Edges are selected with probability `p` from the set
 /// of all possible edges.
 pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
@@ -133,6 +152,13 @@ mod tests {
                 .map(|edge| (edge.source().index(), edge.target().index()))
                 .collect()
         }
+    }
+
+    #[test]
+    fn test_empty_graph() {
+        let graph: DiGraph<(), ()> = empty_graph(9);
+        assert_eq!(graph.node_count(), 9);
+        assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
