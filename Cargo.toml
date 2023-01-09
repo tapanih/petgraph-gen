@@ -1,0 +1,19 @@
+[package]
+name = "petgraph-gen"
+version = "0.1.0"
+authors = ["Tapani Honkanen"]
+edition = "2021"
+license = "MIT or Apache-2.0"
+keywords = ["graph", "graph-algorithms", "generator"]
+categories = ["algorithms"]
+description = "Graph generators for petgraph"
+repository = "https://github.com/tapanih/petgraph-gen"
+readme = "README.md"
+
+[lib]
+name = "petgraph_gen"
+
+[dependencies]
+petgraph = "0.6.2"
+rand = "0.8.5"
+itertools = "0.10.5"
