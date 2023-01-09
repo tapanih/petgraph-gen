@@ -9,6 +9,7 @@ categories = ["algorithms"]
 description = "Graph generators for petgraph"
 repository = "https://github.com/tapanih/petgraph-gen"
 readme = "README.md"
+documentation = "https://docs.rs/petgraph-gen"
 
 [lib]
 name = "petgraph_gen"
