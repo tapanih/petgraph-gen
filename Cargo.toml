@@ -17,4 +17,11 @@ name = "petgraph_gen"
 [dependencies]
 petgraph = "0.6.2"
 rand = "0.8.5"
-itertools = "0.10.5"
+
+[dev-dependencies]
+rand = { version = "0.8.5", features = ["small_rng"] }
+criterion = "0.4"
+
+[[bench]]
+name = "benchmark"
+harness = false

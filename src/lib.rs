@@ -1,12 +1,10 @@
 //! `petgraph-gen` is a crate that extends [petgraph](https://github.com/petgraph/petgraph)
 //! with functions that generate graphs with different properties.
 
-use itertools::Itertools;
 use petgraph::graph::IndexType;
 use petgraph::{EdgeType, Graph};
-use rand::distributions::Bernoulli;
 use rand::distributions::Distribution;
-use rand::seq::SliceRandom;
+use rand::distributions::{Bernoulli, Uniform};
 use rand::Rng;
 use std::collections::HashSet;
 
@@ -34,15 +32,14 @@ pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty
     if n <= 1 {
         return graph;
     }
-    if <Ty as EdgeType>::is_directed() {
-        nodes.iter().permutations(2).for_each(|edge| {
-            graph.add_edge(*edge[0], *edge[1], ());
-        });
-    } else {
-        nodes.iter().combinations(2).for_each(|edge| {
-            graph.add_edge(*edge[0], *edge[1], ());
-        });
-    };
+    for (i, node) in nodes.iter().enumerate() {
+        for other_node in nodes.iter().skip(i + 1) {
+            graph.add_edge(*node, *other_node, ());
+            if <Ty as EdgeType>::is_directed() {
+                graph.add_edge(*other_node, *node, ());
+            }
+        }
+    }
     graph
 }
 
@@ -79,6 +76,7 @@ pub fn empty_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, I
 /// assert_eq!(graph.node_count(), 11);
 /// assert_eq!(graph.edge_count(), 10);
 /// let center_node = NodeIndex::new(0);
+/// assert_eq!(graph.edges(center_node).count(), 10);
 /// for edge in graph.edges(center_node) {
 ///    assert_eq!(edge.source(), center_node);
 /// }
@@ -95,6 +93,18 @@ pub fn star_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix
 
 /// Generates a Erdős-Rényi graph with `n` nodes. Edges are selected with probability `p` from the set
 /// of all possible edges.
+///
+/// # Examples
+/// ```
+/// use petgraph_gen::erdos_renyi_graph;
+/// use petgraph::graph::UnGraph;
+/// use rand::SeedableRng;
+///
+/// let mut rng = rand::rngs::SmallRng::seed_from_u64(42);
+/// let graph: UnGraph<(), ()> = erdos_renyi_graph(&mut rng, 10, 0.3);
+/// assert_eq!(graph.node_count(), 10);
+/// assert_eq!(graph.edge_count(), 15); // out of 45 possible edges
+/// ```
 pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     rng: &mut R,
     n: usize,
@@ -110,19 +120,16 @@ pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     }
     let bernoulli_distribution = Bernoulli::new(p).unwrap();
 
-    if <Ty as EdgeType>::is_directed() {
-        nodes.iter().permutations(2).for_each(|edge| {
+    for (i, node) in nodes.iter().enumerate() {
+        for other_node in nodes.iter().skip(i + 1) {
             if bernoulli_distribution.sample(rng) {
-                graph.add_edge(*edge[0], *edge[1], ());
+                graph.add_edge(*node, *other_node, ());
             }
-        });
-    } else {
-        nodes.iter().combinations(2).for_each(|edge| {
-            if bernoulli_distribution.sample(rng) {
-                graph.add_edge(*edge[0], *edge[1], ());
+            if <Ty as EdgeType>::is_directed() && bernoulli_distribution.sample(rng) {
+                graph.add_edge(*other_node, *node, ());
             }
-        });
-    };
+        }
+    }
     graph
 }
 
@@ -130,6 +137,17 @@ pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
 /// with an empty graph of `m` nodes and adds `n - m` additional nodes. Each new node is connected to `m`
 /// existing nodes, where the probability of a node being connected to a given node is proportional
 /// to the number of edges that node already has.
+///
+/// # Examples
+/// ```
+/// use petgraph::Graph;
+/// use petgraph_gen::barabasi_albert_graph;
+///
+/// let mut rng = rand::thread_rng();
+/// let graph: Graph<(), ()> = barabasi_albert_graph(&mut rng, 100, 3);
+/// assert_eq!(graph.node_count(), 100);
+/// assert_eq!(graph.edge_count(), 291);
+/// ```
 ///
 /// # Panics
 /// Panics if `m` equals 0 or is greater than or equal to `n`.
@@ -144,15 +162,20 @@ pub fn barabasi_albert_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     assert!(m < n);
 
     let mut graph = Graph::with_capacity(n, (n - m) * m);
-    let mut repeated_nodes = (0..m).map(|_| graph.add_node(())).collect_vec();
+    let mut repeated_nodes = Vec::with_capacity((n - m) * m);
+    for _ in 0..m {
+        let node = graph.add_node(());
+        repeated_nodes.push(node);
+    }
 
     for _ in m..n {
         let node = graph.add_node(());
+        let uniform_distribution = Uniform::new(0, repeated_nodes.len());
 
         let mut targets = HashSet::new();
         while targets.len() < m {
-            let target = repeated_nodes.choose(rng).unwrap();
-            targets.insert(*target);
+            let random_index = uniform_distribution.sample(rng);
+            targets.insert(repeated_nodes[random_index]);
         }
         for target in targets {
             graph.add_edge(node, target, ());
@@ -165,10 +188,8 @@ pub fn barabasi_albert_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
 
 #[cfg(test)]
 mod tests {
-    use petgraph::adj::NodeIndex;
     use super::*;
     use petgraph::graph::{DiGraph, UnGraph};
-    use petgraph::visit::EdgeRef;
     use rand::rngs::mock::StepRng;
 
     trait EdgeIndexTuples<Ty: EdgeType, Ix: IndexType> {
@@ -185,26 +206,6 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_graph() {
-        let graph: DiGraph<(), ()> = empty_graph(9);
-        assert_eq!(graph.node_count(), 9);
-        assert_eq!(graph.edge_count(), 0);
-    }
-
-    #[test]
-    fn test_star_graph() {
-        let graph: DiGraph<(), ()> = star_graph(9);
-        assert_eq!(graph.node_count(), 10);
-        assert_eq!(graph.edge_count(), 9);
-
-        let center_node = NodeIndex::new(0);
-        assert_eq!(graph.edges(center_node).count(), 9);
-        for edge in graph.edges(center_node) {
-            assert_eq!(edge.source(), center_node);
-        }
-    }
-
-    #[test]
     fn test_complete_directed_graph() {
         let graph: DiGraph<(), (), u32> = complete_graph(4);
         assert_eq!(graph.node_count(), 4);
@@ -213,16 +214,16 @@ mod tests {
             graph.edges_as_tuples(),
             vec![
                 (0, 1),
-                (0, 2),
-                (0, 3),
                 (1, 0),
-                (1, 2),
-                (1, 3),
+                (0, 2),
                 (2, 0),
-                (2, 1),
-                (2, 3),
+                (0, 3),
                 (3, 0),
+                (1, 2),
+                (2, 1),
+                (1, 3),
                 (3, 1),
+                (2, 3),
                 (3, 2)
             ]
         );
@@ -265,13 +266,5 @@ mod tests {
             graph.edges_as_tuples(),
             vec![(0, 1), (0, 3), (1, 2), (1, 4), (2, 4)]
         );
-    }
-
-    #[test]
-    fn test_barabasi_albert_graph() {
-        let mut rng = rand::thread_rng();
-        let graph: Graph<(), ()> = barabasi_albert_graph(&mut rng, 100, 3);
-        assert_eq!(graph.node_count(), 100);
-        assert_eq!(graph.edge_count(), 291);
     }
 }
