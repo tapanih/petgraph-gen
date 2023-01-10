@@ -1,12 +1,13 @@
 //! `petgraph-gen` is a crate that extends [petgraph](https://github.com/petgraph/petgraph)
 //! with functions that generate graphs with different properties.
 
-use petgraph::graph::IndexType;
+use petgraph::graph::{IndexType, NodeIndex};
 use petgraph::{EdgeType, Graph};
 use rand::distributions::Distribution;
 use rand::distributions::{Bernoulli, Uniform};
 use rand::Rng;
 use std::collections::HashSet;
+use std::mem::swap;
 
 /// Generates a complete graph with `n` nodes. A complete graph is a graph where
 /// each node is connected to every other node. On a directed graph, this means
@@ -91,21 +92,89 @@ pub fn star_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix
     graph
 }
 
-/// Generates a Erdős-Rényi graph with `n` nodes. Edges are selected with probability `p` from the set
-/// of all possible edges.
+/// Generates a random graph according to the `G(n,m)` Erdős-Rényi model. The resulting graph has `n`
+/// nodes and `m` edges are selected randomly and uniformly from the set of all possible edges
+/// (excluding loop edges).
 ///
 /// # Examples
 /// ```
-/// use petgraph_gen::erdos_renyi_graph;
-/// use petgraph::graph::UnGraph;
+/// use petgraph_gen::random_gnm_graph;
+/// use petgraph::graph::{DiGraph, UnGraph};
+/// use rand::SeedableRng;
+/// use rand::rngs::SmallRng;
+///
+/// let mut rng = SmallRng::from_entropy();
+/// let undirected_graph: UnGraph<(), ()> = random_gnm_graph(&mut rng, 10, 20);
+/// assert_eq!(undirected_graph.node_count(), 10);
+/// assert_eq!(undirected_graph.edge_count(), 20);
+///
+/// let directed_graph: DiGraph<(), ()> = random_gnm_graph(&mut rng, 10, 50);
+/// assert_eq!(directed_graph.node_count(), 10);
+/// assert_eq!(directed_graph.edge_count(), 50);
+/// ```
+///
+/// # Panics
+/// Panics if `m` is greater than the number of possible edges.
+pub fn random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
+    rng: &mut R,
+    n: usize,
+    m: usize,
+) -> Graph<(), (), Ty, Ix> {
+    let max_edges = if <Ty as EdgeType>::is_directed() {
+        n * (n - 1)
+    } else {
+        n * (n - 1) / 2
+    };
+    assert!(m <= max_edges);
+
+    if m == max_edges {
+        return complete_graph(n);
+    }
+    let mut graph = Graph::with_capacity(n, m);
+
+    for _ in 0..n {
+        graph.add_node(());
+    }
+
+    let uniform_distribution = Uniform::new(0, n);
+    let mut edges = HashSet::with_capacity(m);
+    while edges.len() < m {
+        let mut source = uniform_distribution.sample(rng);
+        let mut target = uniform_distribution.sample(rng);
+        if source == target {
+            continue;
+        }
+        if !<Ty as EdgeType>::is_directed() && source > target {
+            swap(&mut source, &mut target);
+        }
+        edges.insert((source, target));
+    }
+    for (source, target) in edges {
+        graph.add_edge(NodeIndex::new(source), NodeIndex::new(target), ());
+    }
+    graph
+}
+
+/// Generates a random graph according to the `G(n,p)` Erdős-Rényi model.
+/// The resulting graph has `n` nodes and edges are selected with probability `p` from the set
+/// of all possible edges (excluding loop edges).
+///
+/// # Examples
+/// ```
+/// use petgraph_gen::random_gnp_graph;
+/// use petgraph::graph::{DiGraph, UnGraph};
 /// use rand::SeedableRng;
 ///
 /// let mut rng = rand::rngs::SmallRng::seed_from_u64(42);
-/// let graph: UnGraph<(), ()> = erdos_renyi_graph(&mut rng, 10, 0.3);
-/// assert_eq!(graph.node_count(), 10);
-/// assert_eq!(graph.edge_count(), 15); // out of 45 possible edges
+/// let undirected_graph: UnGraph<(), ()> = random_gnp_graph(&mut rng, 10, 0.3);
+/// assert_eq!(undirected_graph.node_count(), 10);
+/// assert_eq!(undirected_graph.edge_count(), 15); // out of 45 possible edges
+///
+/// let directed_graph: DiGraph<(), ()> = random_gnp_graph(&mut rng, 10, 0.5);
+/// assert_eq!(directed_graph.node_count(), 10);
+/// assert_eq!(directed_graph.edge_count(), 40); // out of 90 possible edges
 /// ```
-pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
+pub fn random_gnp_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     rng: &mut R,
     n: usize,
     p: f64,
@@ -131,6 +200,16 @@ pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
         }
     }
     graph
+}
+
+/// See [`random_gnp_graph`](fn.random_gnp_graph.html) for details.
+#[deprecated(since = "0.2.0", note = "Please use `random_gnp_graph` instead")]
+pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
+    rng: &mut R,
+    n: usize,
+    p: f64,
+) -> Graph<(), (), Ty, Ix> {
+    random_gnp_graph(rng, n, p)
 }
 
 /// Generates a random graph with `n` nodes using the [Barabási-Albert][ba] model. The graph starts
@@ -191,6 +270,8 @@ mod tests {
     use super::*;
     use petgraph::graph::{DiGraph, UnGraph};
     use rand::rngs::mock::StepRng;
+    use rand::rngs::SmallRng;
+    use rand::SeedableRng;
 
     trait EdgeIndexTuples<Ty: EdgeType, Ix: IndexType> {
         fn edges_as_tuples(&self) -> Vec<(usize, usize)>;
@@ -241,30 +322,81 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_erdos_renyi_graph() {
+    fn test_empty_random_gnp_graph() {
         let mut rng = rand::thread_rng();
-        let graph: UnGraph<(), ()> = erdos_renyi_graph(&mut rng, 10, 0.0);
+        let graph: UnGraph<(), ()> = random_gnp_graph(&mut rng, 10, 0.0);
         assert_eq!(graph.node_count(), 10);
         assert_eq!(graph.edge_count(), 0);
     }
 
     #[test]
-    fn test_complete_erdos_renyi_graph() {
+    fn test_complete_random_gnp_graph() {
         let mut rng = rand::thread_rng();
-        let graph: UnGraph<(), ()> = erdos_renyi_graph(&mut rng, 10, 1.0);
+        let graph: UnGraph<(), ()> = random_gnp_graph(&mut rng, 10, 1.0);
         assert_eq!(graph.node_count(), 10);
         assert_eq!(graph.edge_count(), 45);
     }
 
     #[test]
-    fn test_erdos_renyi_graph() {
+    fn test_complete_directed_random_gnp_graph() {
+        let mut rng = rand::thread_rng();
+        let graph: DiGraph<(), ()> = random_gnp_graph(&mut rng, 10, 1.0);
+        assert_eq!(graph.node_count(), 10);
+        assert_eq!(graph.edge_count(), 90);
+    }
+
+    #[test]
+    fn test_random_gnp_graph() {
         let mut rng = StepRng::new(0, u64::MAX / 2 + 1);
-        let graph: UnGraph<(), ()> = erdos_renyi_graph(&mut rng, 5, 0.5);
+        let graph: UnGraph<(), ()> = random_gnp_graph(&mut rng, 5, 0.5);
         assert_eq!(graph.node_count(), 5);
         assert_eq!(graph.edge_count(), 5);
         assert_eq!(
             graph.edges_as_tuples(),
             vec![(0, 1), (0, 3), (1, 2), (1, 4), (2, 4)]
         );
+    }
+
+    #[test]
+    fn test_directed_random_gnm_graph_does_not_have_self_loops() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: DiGraph<(), ()> = random_gnm_graph(&mut rng, 10, 89);
+        for edge in graph.raw_edges() {
+            assert_ne!(edge.source(), edge.target()); // no self-loops
+        }
+    }
+
+    #[test]
+    fn test_undirected_random_gnm_graph_does_not_have_self_loops() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: UnGraph<(), ()> = random_gnm_graph(&mut rng, 10, 44);
+        for edge in graph.raw_edges() {
+            assert_ne!(edge.source(), edge.target()); // no self-loops
+        }
+    }
+
+    #[test]
+    fn test_directed_random_gnm_graph_does_not_have_duplicate_edges() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: DiGraph<(), ()> = random_gnm_graph(&mut rng, 10, 89);
+        let mut unique_edges = HashSet::new();
+        for edge in graph.raw_edges() {
+            let source = edge.source().index();
+            let target = edge.target().index();
+            assert!(unique_edges.insert((source, target)));
+        }
+    }
+
+    #[test]
+    fn test_undirected_random_gnm_graph_does_not_have_duplicate_edges() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: UnGraph<(), ()> = random_gnm_graph(&mut rng, 10, 44);
+        let mut unique_edges = HashSet::new();
+        for edge in graph.raw_edges() {
+            let source = edge.source().index();
+            let target = edge.target().index();
+            assert!(unique_edges.insert((source, target)));
+            assert!(unique_edges.insert((target, source)));
+        }
     }
 }

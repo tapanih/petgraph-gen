@@ -35,10 +35,18 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("erdos_renyi_graph", |b| {
+    c.bench_function("random_gnp_graph", |b| {
         b.iter(|| {
             let graph: Graph<(), ()> =
-                petgraph_gen::erdos_renyi_graph(&mut rng, black_box(250), black_box(0.3));
+                petgraph_gen::random_gnp_graph(&mut rng, black_box(250), black_box(0.3));
+            graph
+        })
+    });
+
+    c.bench_function("random_gnm_graph", |b| {
+        b.iter(|| {
+            let graph: Graph<(), ()> =
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(20000));
             graph
         })
     });
