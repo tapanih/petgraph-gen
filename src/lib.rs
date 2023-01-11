@@ -29,15 +29,17 @@ use std::mem::swap;
 ///
 pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
     let mut graph = Graph::with_capacity(n, n * n);
-    let nodes: Vec<_> = (0..n).map(|_| graph.add_node(())).collect();
+    for _ in 0..n {
+        graph.add_node(());
+    }
     if n <= 1 {
         return graph;
     }
-    for (i, node) in nodes.iter().enumerate() {
-        for other_node in nodes.iter().skip(i + 1) {
-            graph.add_edge(*node, *other_node, ());
-            if <Ty as EdgeType>::is_directed() {
-                graph.add_edge(*other_node, *node, ());
+    for i in 0..n - 1 {
+        for j in i + 1..n {
+            graph.add_edge(NodeIndex::new(i), NodeIndex::new(j), ());
+            if Ty::is_directed() {
+                graph.add_edge(NodeIndex::new(j), NodeIndex::new(i), ());
             }
         }
     }
@@ -57,9 +59,9 @@ pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty
 /// ```
 pub fn empty_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
     let mut graph = Graph::with_capacity(n, 0);
-    (0..n).for_each(|_| {
+    for _ in 0..n {
         graph.add_node(());
-    });
+    }
     graph
 }
 
@@ -85,10 +87,10 @@ pub fn empty_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, I
 pub fn star_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
     let mut graph = Graph::with_capacity(n + 1, n);
     let center = graph.add_node(());
-    (0..n).for_each(|_| {
+    for _ in 0..n {
         let node = graph.add_node(());
         graph.add_edge(center, node, ());
-    });
+    }
     graph
 }
 
