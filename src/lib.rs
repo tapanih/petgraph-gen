@@ -205,7 +205,7 @@ pub fn random_gnp_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
 }
 
 /// See [`random_gnp_graph`](fn.random_gnp_graph.html) for details.
-#[deprecated(since = "0.2.0", note = "Please use `random_gnp_graph` instead")]
+#[deprecated(since = "0.1.2", note = "Please use `random_gnp_graph` instead")]
 pub fn erdos_renyi_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     rng: &mut R,
     n: usize,
