@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use petgraph::Graph;
 use petgraph::prelude::UnGraph;
+use petgraph::Graph;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
