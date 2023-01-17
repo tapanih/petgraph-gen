@@ -9,6 +9,18 @@ use rand::Rng;
 use std::collections::HashSet;
 use std::mem::swap;
 
+/// Generates an empty graph with `n` nodes and given edge capacity.
+fn empty_graph_with_capacity<Ty: EdgeType, Ix: IndexType>(
+    n: usize,
+    edge_capacity: usize,
+) -> Graph<(), (), Ty, Ix> {
+    let mut graph = Graph::with_capacity(n, edge_capacity);
+    for _ in 0..n {
+        graph.add_node(());
+    }
+    graph
+}
+
 /// Generates a complete graph with `n` nodes. A complete graph is a graph where
 /// each node is connected to every other node. On a directed graph, this means
 /// that each node has `n - 1` incoming edges and `n - 1` outgoing edges.
@@ -28,10 +40,7 @@ use std::mem::swap;
 /// ```
 ///
 pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
-    let mut graph = Graph::with_capacity(n, n * n);
-    for _ in 0..n {
-        graph.add_node(());
-    }
+    let mut graph = empty_graph_with_capacity(n, n * n);
     if n <= 1 {
         return graph;
     }
@@ -58,11 +67,7 @@ pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty
 /// assert_eq!(graph.edge_count(), 0);
 /// ```
 pub fn empty_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
-    let mut graph = Graph::with_capacity(n, 0);
-    for _ in 0..n {
-        graph.add_node(());
-    }
-    graph
+    empty_graph_with_capacity(n, 0)
 }
 
 /// Generates a star graph with a single center node connected to `n` other nodes. The resulting
@@ -90,6 +95,67 @@ pub fn star_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix
     for _ in 0..n {
         let node = graph.add_node(());
         graph.add_edge(center, node, ());
+    }
+    graph
+}
+
+fn dense_random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
+    rng: &mut R,
+    n: usize,
+    m: usize,
+) -> Graph<(), (), Ty, Ix> {
+    let mut graph = empty_graph_with_capacity(n, m);
+
+    let uniform_distribution = Uniform::new(0, m);
+    let mut edges = Vec::with_capacity(m);
+
+    let mut edge_count = 0;
+    for i in 0..n - 1 {
+        for j in i + 1..n {
+            edge_count += 1;
+            if edge_count <= m {
+                edges.push((i, j));
+            } else if rng.gen_range(0..edge_count) < m {
+                edges[uniform_distribution.sample(rng)] = (i, j);
+            }
+            if <Ty as EdgeType>::is_directed() {
+                edge_count += 1;
+                if edge_count <= m {
+                    edges.push((j, i));
+                } else if rng.gen_range(0..edge_count) < m {
+                    edges[uniform_distribution.sample(rng)] = (j, i);
+                }
+            }
+        }
+    }
+    for (source, target) in edges {
+        graph.add_edge(NodeIndex::new(source), NodeIndex::new(target), ());
+    }
+    graph
+}
+
+fn sparse_random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
+    rng: &mut R,
+    n: usize,
+    m: usize,
+) -> Graph<(), (), Ty, Ix> {
+    let mut graph = empty_graph_with_capacity(n, m);
+
+    let uniform_distribution = Uniform::new(0, n);
+    let mut edges = HashSet::with_capacity(m);
+    while edges.len() < m {
+        let mut source = uniform_distribution.sample(rng);
+        let mut target = uniform_distribution.sample(rng);
+        if source == target {
+            continue;
+        }
+        if !<Ty as EdgeType>::is_directed() && source > target {
+            swap(&mut source, &mut target);
+        }
+        edges.insert((source, target));
+    }
+    for (source, target) in edges {
+        graph.add_edge(NodeIndex::new(source), NodeIndex::new(target), ());
     }
     graph
 }
@@ -130,31 +196,13 @@ pub fn random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     assert!(m <= max_edges);
 
     if m == max_edges {
-        return complete_graph(n);
+        complete_graph(n)
+    } else if m < max_edges / 6 {
+        // based on some experiments, the sparse algorithm is faster when less than 15 % of the edges are selected
+        sparse_random_gnm_graph(rng, n, m)
+    } else {
+        dense_random_gnm_graph(rng, n, m)
     }
-    let mut graph = Graph::with_capacity(n, m);
-
-    for _ in 0..n {
-        graph.add_node(());
-    }
-
-    let uniform_distribution = Uniform::new(0, n);
-    let mut edges = HashSet::with_capacity(m);
-    while edges.len() < m {
-        let mut source = uniform_distribution.sample(rng);
-        let mut target = uniform_distribution.sample(rng);
-        if source == target {
-            continue;
-        }
-        if !<Ty as EdgeType>::is_directed() && source > target {
-            swap(&mut source, &mut target);
-        }
-        edges.insert((source, target));
-    }
-    for (source, target) in edges {
-        graph.add_edge(NodeIndex::new(source), NodeIndex::new(target), ());
-    }
-    graph
 }
 
 /// Generates a random graph according to the `G(n,p)` Erdős-Rényi model.
@@ -187,7 +235,7 @@ pub fn random_gnp_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
         return graph;
     }
     if p >= 1.0 {
-        return complete_graph::<Ty, Ix>(n);
+        return complete_graph(n);
     }
     let bernoulli_distribution = Bernoulli::new(p).unwrap();
 
@@ -400,5 +448,37 @@ mod tests {
             assert!(unique_edges.insert((source, target)));
             assert!(unique_edges.insert((target, source)));
         }
+    }
+
+    #[test]
+    fn test_undirected_random_gnm_graph_with_zero_edges() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: UnGraph<(), ()> = random_gnm_graph(&mut rng, 100, 0);
+        assert_eq!(graph.node_count(), 100);
+        assert_eq!(graph.edge_count(), 0);
+    }
+
+    #[test]
+    fn test_directed_random_gnm_graph_with_zero_edges() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: DiGraph<(), ()> = random_gnm_graph(&mut rng, 100, 0);
+        assert_eq!(graph.node_count(), 100);
+        assert_eq!(graph.edge_count(), 0);
+    }
+
+    #[test]
+    fn test_undirected_random_gnm_graph_with_maximum_edges() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: UnGraph<(), ()> = random_gnm_graph(&mut rng, 10, 45);
+        assert_eq!(graph.node_count(), 10);
+        assert_eq!(graph.edge_count(), 45);
+    }
+
+    #[test]
+    fn test_directed_random_gnm_graph_with_maximum_edges() {
+        let mut rng = SmallRng::from_entropy();
+        let graph: DiGraph<(), ()> = random_gnm_graph(&mut rng, 10, 90);
+        assert_eq!(graph.node_count(), 10);
+        assert_eq!(graph.edge_count(), 90);
     }
 }

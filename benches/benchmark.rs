@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use petgraph::Graph;
+use petgraph::prelude::UnGraph;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
@@ -43,10 +44,34 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("random_gnm_graph", |b| {
+    c.bench_function("random_gnm_graph directed sparse", |b| {
         b.iter(|| {
             let graph: Graph<(), ()> =
                 petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(20000));
+            graph
+        })
+    });
+
+    c.bench_function("random_gnm_graph directed dense", |b| {
+        b.iter(|| {
+            let graph: Graph<(), ()> =
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(200000));
+            graph
+        })
+    });
+
+    c.bench_function("random_gnm_graph undirected sparse", |b| {
+        b.iter(|| {
+            let graph: UnGraph<(), ()> =
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(10000));
+            graph
+        })
+    });
+
+    c.bench_function("random_gnm_graph undirected dense", |b| {
+        b.iter(|| {
+            let graph: UnGraph<(), ()> =
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(100000));
             graph
         })
     });
