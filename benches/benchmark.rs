@@ -31,7 +31,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("barabasi_albert_graph", |b| {
         b.iter(|| {
             let graph: Graph<(), ()> =
-                petgraph_gen::barabasi_albert_graph(&mut rng, black_box(1000), black_box(40));
+                petgraph_gen::barabasi_albert_graph(&mut rng, black_box(1000), black_box(40), None);
             graph
         })
     });
