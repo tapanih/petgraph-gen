@@ -1,12 +1,11 @@
-use petgraph::graph::IndexType;
+use petgraph::graph::{IndexType, NodeIndex};
 use petgraph::{EdgeType, Graph};
 use rand::distributions::Distribution;
 use rand::distributions::Uniform;
 use rand::Rng;
-use std::collections::HashSet;
 
 /// Generates a random graph with `n` nodes using the [Barabási-Albert][ba] model. The graph starts
-/// with an empty graph of `m` nodes and adds `n - m` additional nodes. Each new node is connected to `m`
+/// with a star graph of `m + 1` nodes and adds `n - m - 1` additional nodes. Each new node is connected to `m`
 /// existing nodes, where the probability of a node being connected to a given node is proportional
 /// to the number of edges that node already has.
 ///
@@ -34,25 +33,36 @@ pub fn barabasi_albert_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     assert!(m < n);
 
     let mut graph = Graph::with_capacity(n, (n - m) * m);
-    let mut repeated_nodes = Vec::with_capacity((n - m) * m);
+    let mut repeated_nodes = Vec::with_capacity((n - m) * m * 2);
+    let center = graph.add_node(());
     for _ in 0..m {
         let node = graph.add_node(());
+        graph.add_edge(center, node, ());
+        repeated_nodes.push(center);
         repeated_nodes.push(node);
     }
 
-    for _ in m..n {
+    let mut picked = vec![false; n];
+    let mut targets = vec![NodeIndex::new(0); m];
+    for _ in (m + 1)..n {
         let node = graph.add_node(());
         let uniform_distribution = Uniform::new(0, repeated_nodes.len());
 
-        let mut targets = HashSet::new();
-        while targets.len() < m {
+        let mut i = 0;
+        while i < m {
             let random_index = uniform_distribution.sample(rng);
-            targets.insert(repeated_nodes[random_index]);
+            let target = repeated_nodes[random_index];
+            if !picked[target.index()] {
+                picked[target.index()] = true;
+                targets[i] = target;
+                i += 1;
+            }
         }
-        for target in targets {
-            graph.add_edge(node, target, ());
+        for target in &targets {
+            graph.add_edge(node, *target, ());
             repeated_nodes.push(node);
-            repeated_nodes.push(target);
+            repeated_nodes.push(*target);
+            picked[target.index()] = false;
         }
     }
     graph
@@ -66,7 +76,7 @@ mod tests {
     use rand::SeedableRng;
 
     #[test]
-    fn test_directed_barabasi_albert_graph_has_at_most_m_outgoing_edges() {
+    fn test_directed_barabasi_albert_graph_nodes_have_at_most_m_outgoing_edges() {
         let mut rng = SmallRng::from_entropy();
         let graph: DiGraph<(), ()> = barabasi_albert_graph(&mut rng, 100, 3);
         graph.node_indices().for_each(|node| {

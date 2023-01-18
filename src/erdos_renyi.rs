@@ -13,7 +13,7 @@ fn dense_random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     n: usize,
     m: usize,
 ) -> Graph<(), (), Ty, Ix> {
-    let mut graph = empty_graph_with_capacity(n, m);
+    let mut graph = empty_graph_with_capacity(n, n, m);
 
     let uniform_distribution = Uniform::new(0, m);
     let mut edges = Vec::with_capacity(m);
@@ -48,7 +48,7 @@ fn sparse_random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     n: usize,
     m: usize,
 ) -> Graph<(), (), Ty, Ix> {
-    let mut graph = empty_graph_with_capacity(n, m);
+    let mut graph = empty_graph_with_capacity(n, n, m);
 
     let uniform_distribution = Uniform::new(0, n);
     let mut edges = HashSet::with_capacity(m);

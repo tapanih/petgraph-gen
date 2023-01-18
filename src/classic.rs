@@ -21,7 +21,7 @@ use petgraph::{EdgeType, Graph};
 /// ```
 ///
 pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
-    let mut graph = empty_graph_with_capacity(n, n * n);
+    let mut graph = empty_graph_with_capacity(n, n, n * n);
     if n <= 1 {
         return graph;
     }
@@ -48,7 +48,7 @@ pub fn complete_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty
 /// assert_eq!(graph.edge_count(), 0);
 /// ```
 pub fn empty_graph<Ty: EdgeType, Ix: IndexType>(n: usize) -> Graph<(), (), Ty, Ix> {
-    empty_graph_with_capacity(n, 0)
+    empty_graph_with_capacity(n, n, 0)
 }
 
 /// Generates a star graph with a single center node connected to `n` other nodes. The resulting
