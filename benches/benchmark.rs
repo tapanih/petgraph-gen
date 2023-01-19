@@ -47,7 +47,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("random_gnm_graph directed sparse", |b| {
         b.iter(|| {
             let graph: Graph<(), ()> =
-                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(20000));
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(250), black_box(3000));
             graph
         })
     });
@@ -55,7 +55,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("random_gnm_graph directed dense", |b| {
         b.iter(|| {
             let graph: Graph<(), ()> =
-                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(200000));
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(250), black_box(30000));
             graph
         })
     });
@@ -63,7 +63,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("random_gnm_graph undirected sparse", |b| {
         b.iter(|| {
             let graph: UnGraph<(), ()> =
-                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(10000));
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(250), black_box(3000));
             graph
         })
     });
@@ -71,7 +71,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("random_gnm_graph undirected dense", |b| {
         b.iter(|| {
             let graph: UnGraph<(), ()> =
-                petgraph_gen::random_gnm_graph(&mut rng, black_box(500), black_box(100000));
+                petgraph_gen::random_gnm_graph(&mut rng, black_box(250), black_box(30000));
             graph
         })
     });

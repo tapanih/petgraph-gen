@@ -5,7 +5,7 @@ use petgraph::{EdgeType, Graph};
 use rand::distributions::Distribution;
 use rand::distributions::{Bernoulli, Uniform};
 use rand::Rng;
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 use std::mem::swap;
 
 fn dense_random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
@@ -51,7 +51,7 @@ fn sparse_random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     let mut graph = empty_graph_with_capacity(n, n, m);
 
     let uniform_distribution = Uniform::new(0, n);
-    let mut edges = HashSet::with_capacity(m);
+    let mut edges = FxHashSet::default();
     while edges.len() < m {
         let mut source = uniform_distribution.sample(rng);
         let mut target = uniform_distribution.sample(rng);
@@ -173,6 +173,7 @@ mod tests {
     use rand::rngs::mock::StepRng;
     use rand::rngs::SmallRng;
     use rand::SeedableRng;
+    use std::collections::HashSet;
 
     #[test]
     fn test_directed_random_gnm_graph_does_not_have_self_loops() {
