@@ -102,7 +102,11 @@ pub fn random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
     } else {
         n * (n - 1) / 2
     };
-    assert!(m <= max_edges);
+    assert!(
+        m <= max_edges,
+        "Parameter m must be less than or equal to {}",
+        max_edges
+    );
 
     if m == max_edges {
         complete_graph(n)
@@ -275,5 +279,12 @@ mod tests {
         let graph: UnGraph<(), ()> = random_gnp_graph(&mut rng, 5, 0.5);
         let expected = Graph::from_edges(&[(0, 1), (0, 3), (1, 2), (1, 4), (2, 4)]);
         assert_graph_eq(&graph, &expected);
+    }
+
+    #[test]
+    #[should_panic(expected = "m must be less than or equal to 90")]
+    fn test_random_gnm_graph_panic() {
+        let mut rng = rand::thread_rng();
+        let _: Graph<(), ()> = random_gnm_graph(&mut rng, 10, 91);
     }
 }
