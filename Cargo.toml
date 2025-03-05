@@ -15,7 +15,7 @@ documentation = "https://docs.rs/petgraph-gen"
 name = "petgraph_gen"
 
 [dependencies]
-petgraph = "0.6.2"
+petgraph = "0.7"
 rand = "0.8.5"
 rustc-hash = "1.1.0"
 
