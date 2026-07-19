@@ -2,8 +2,8 @@ use crate::star_graph;
 use petgraph::graph::{IndexType, NodeIndex};
 use petgraph::prelude::EdgeRef;
 use petgraph::{EdgeType, Graph};
-use rand::distr::{Distribution as _, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution as _, Uniform};
 
 /// Generates a random graph with `n` nodes using the [Barabási-Albert][ba] model. The process
 /// starts with a star graph of `m + 1` nodes or an initial graph given by the `initial_graph`

@@ -1,6 +1,6 @@
-use petgraph::prelude::UnGraph;
 use criterion::{Criterion, criterion_group, criterion_main};
 use petgraph::Graph;
+use petgraph::prelude::UnGraph;
 use rand::rngs::SmallRng;
 use std::hint::black_box;
 

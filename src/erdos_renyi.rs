@@ -2,9 +2,9 @@ use crate::common::empty_graph_with_capacity;
 use crate::complete_graph;
 use petgraph::graph::{IndexType, NodeIndex};
 use petgraph::{EdgeType, Graph};
-use rand::distr::{Bernoulli, Distribution as _, Uniform};
 use rand::Rng;
 use rand::RngExt;
+use rand::distr::{Bernoulli, Distribution as _, Uniform};
 use rustc_hash::FxHashSet;
 use std::mem::swap;
 
