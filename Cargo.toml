@@ -15,13 +15,14 @@ documentation = "https://docs.rs/petgraph-gen"
 name = "petgraph_gen"
 
 [dependencies]
-petgraph = "0.8.1"
-rand = "0.9.0"
-rustc-hash = "1.1.0"
+petgraph = "0.8"
+rand = "0.10"
+rustc-hash = "2.1"
 
 [dev-dependencies]
-rand = { version = "0.9.0", features = ["small_rng"] }
-criterion = "0.4"
+# rand = { version = "0.10", features = ["small_rng"] }
+rand = { version = "0.10" }
+criterion = "0.8"
 
 [[bench]]
 name = "benchmark"
