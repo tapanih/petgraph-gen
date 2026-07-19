@@ -1,11 +1,11 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use petgraph::prelude::UnGraph;
+use criterion::{Criterion, criterion_group, criterion_main};
 use petgraph::Graph;
 use rand::rngs::SmallRng;
-use rand::SeedableRng;
+use std::hint::black_box;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut rng = SmallRng::from_entropy();
+    let mut rng: SmallRng = rand::make_rng();
 
     c.bench_function("complete_graph", |b| {
         b.iter(|| {
