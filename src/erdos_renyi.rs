@@ -164,11 +164,13 @@ pub fn random_gnp_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
 
 #[cfg(test)]
 mod tests {
+    use crate::{common::assert_graph_eq, step_rng::StepRng};
+
     use super::*;
     use petgraph::graph::{DiGraph, UnGraph};
     // use rand::rngs::mock::StepRng;
     use rand::rngs::SmallRng;
-    use std::collections::HashSet;
+    use std::{collections::HashSet, convert::Infallible};
 
     #[test]
     fn test_directed_random_gnm_graph_does_not_have_self_loops() {
@@ -269,13 +271,13 @@ mod tests {
         assert_eq!(graph.edge_count(), 90);
     }
 
-    // #[test]
-    // fn test_random_gnp_graph() {
-    //     let mut rng = StepRng::new(0, u64::MAX / 2 + 1);
-    //     let graph: UnGraph<(), ()> = random_gnp_graph(&mut rng, 5, 0.5);
-    //     let expected = Graph::from_edges(&[(0, 1), (0, 3), (1, 2), (1, 4), (2, 4)]);
-    //     assert_graph_eq(&graph, &expected);
-    // }
+    #[test]
+    fn test_random_gnp_graph() {
+        let mut rng = StepRng::new(0, u64::MAX / 2 + 1);
+        let graph: UnGraph<(), ()> = random_gnp_graph(&mut rng, 5, 0.5);
+        let expected = Graph::from_edges([(0, 1), (0, 3), (1, 2), (1, 4), (2, 4)]);
+        assert_graph_eq(&graph, &expected);
+    }
 
     #[test]
     #[should_panic(expected = "m must be less than or equal to 90")]
