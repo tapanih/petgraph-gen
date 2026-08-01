@@ -1,4 +1,3 @@
-use rand::Rng;
 use std::convert::Infallible;
 
 /// This generates an arithmetic sequence
@@ -13,7 +12,6 @@ use std::convert::Infallible;
 /// <https://people.eecs.berkeley.edu/~pschafhalter/pub/erdos/doc/rand/rngs/mock/struct.StepRng.html>
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StepRng {
-    initial: u64,
     increment: u64,
     next: u64,
 }
@@ -21,7 +19,6 @@ pub struct StepRng {
 impl StepRng {
     pub fn new(initial: u64, increment: u64) -> Self {
         StepRng {
-            initial,
             increment,
             next: initial,
         }
@@ -44,8 +41,9 @@ impl rand::TryRng for StepRng {
     }
 
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Infallible> {
-        for byte in dest.iter_mut() {
-            *byte = self.next_u64() as u8;
+        for chunk in dest.chunks_mut(8) {
+            let bytes = self.try_next_u64()?.to_le_bytes();
+            chunk.copy_from_slice(&bytes[..chunk.len()]);
         }
         Ok(())
     }

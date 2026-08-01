@@ -21,8 +21,7 @@ rustc-hash = "2.1"
 
 [dev-dependencies]
 criterion = "0.8"
-# rand = { version = "0.10", features = ["small_rng"] }
-rand = { version = "0.10" }
+rand = "0.10"
 
 [[bench]]
 name = "benchmark"

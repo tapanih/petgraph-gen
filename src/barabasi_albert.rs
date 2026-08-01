@@ -15,7 +15,7 @@ use rand::distr::{Distribution as _, Uniform};
 /// ```
 /// use petgraph::Graph;
 /// use petgraph_gen::{barabasi_albert_graph, rand};
-/// use rand::rngs::SmallRng;
+/// use petgraph_gen::rand::rngs::SmallRng;
 ///
 /// let mut rng: SmallRng = rand::make_rng();
 /// let graph: Graph<(), ()> = barabasi_albert_graph(&mut rng, 100, 3, None);

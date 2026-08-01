@@ -75,7 +75,7 @@ fn sparse_random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
 ///
 /// # Examples
 /// ```
-/// use petgraph_gen::{random_gnm_graph , rand};
+/// use petgraph_gen::{random_gnm_graph, rand};
 /// use petgraph::graph::{DiGraph, UnGraph};
 ///
 /// let mut rng = rand::rng();
@@ -122,7 +122,8 @@ pub fn random_gnm_graph<R: Rng + ?Sized, Ty: EdgeType, Ix: IndexType>(
 ///
 /// # Examples
 /// ```
-/// use petgraph_gen::{random_gnp_graph, rand::SeedableRng};
+/// use petgraph_gen::{random_gnp_graph, rand};
+/// use petgraph_gen::rand::SeedableRng;
 /// use petgraph::graph::{DiGraph, UnGraph};
 ///
 /// let mut rng = rand::rngs::SmallRng::seed_from_u64(42);
@@ -168,9 +169,8 @@ mod tests {
 
     use super::*;
     use petgraph::graph::{DiGraph, UnGraph};
-    // use rand::rngs::mock::StepRng;
     use rand::rngs::SmallRng;
-    use std::{collections::HashSet, convert::Infallible};
+    use std::collections::HashSet;
 
     #[test]
     fn test_directed_random_gnm_graph_does_not_have_self_loops() {

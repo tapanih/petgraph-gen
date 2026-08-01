@@ -5,6 +5,7 @@ mod barabasi_albert;
 mod classic;
 mod common;
 mod erdos_renyi;
+#[cfg(test)]
 mod step_rng;
 
 pub use self::barabasi_albert::barabasi_albert_graph;
