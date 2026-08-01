@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn test_complete_directed_graph() {
         let graph: DiGraph<(), (), u32> = complete_graph(4);
-        let expected = Graph::from_edges(&[
+        let expected = Graph::from_edges([
             (0, 1),
             (1, 0),
             (0, 2),
@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn test_complete_undirected_graph() {
         let graph: UnGraph<(), (), u16> = complete_graph(4);
-        let expected = Graph::from_edges(&[(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
+        let expected = Graph::from_edges([(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]);
         assert_graph_eq(&graph, &expected);
     }
 }

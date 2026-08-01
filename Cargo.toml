@@ -2,7 +2,7 @@
 name = "petgraph-gen"
 version = "0.1.2"
 authors = ["Tapani Honkanen"]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 keywords = ["graph", "graph-algorithms", "generator"]
 categories = ["algorithms"]
@@ -15,13 +15,14 @@ documentation = "https://docs.rs/petgraph-gen"
 name = "petgraph_gen"
 
 [dependencies]
-petgraph = "0.7"
-rand = "0.8.5"
-rustc-hash = "1.1.0"
+petgraph = "0.8"
+rand = "0.10"
+rustc-hash = "2.1"
 
 [dev-dependencies]
-rand = { version = "0.8.5", features = ["small_rng"] }
-criterion = "0.4"
+criterion = "0.8"
+# rand = { version = "0.10", features = ["small_rng"] }
+rand = { version = "0.10" }
 
 [[bench]]
 name = "benchmark"

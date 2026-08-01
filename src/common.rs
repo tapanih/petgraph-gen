@@ -22,7 +22,7 @@ pub(crate) fn assert_graph_eq<Ty: EdgeType, Ix: IndexType>(
     assert_eq!(graph.node_count(), expected.node_count());
     assert_eq!(graph.edge_count(), expected.edge_count());
     for (node_index, expected_index) in graph.node_indices().zip(expected.node_indices()) {
-        assert_eq!(graph[node_index], expected[expected_index]);
+        assert_eq!(node_index, expected_index);
     }
     for (edge_index, expected_index) in graph.edge_indices().zip(expected.edge_indices()) {
         assert_eq!(

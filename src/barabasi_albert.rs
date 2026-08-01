@@ -2,9 +2,8 @@ use crate::star_graph;
 use petgraph::graph::{IndexType, NodeIndex};
 use petgraph::prelude::EdgeRef;
 use petgraph::{EdgeType, Graph};
-use rand::distributions::Distribution;
-use rand::distributions::Uniform;
 use rand::Rng;
+use rand::distr::{Distribution as _, Uniform};
 
 /// Generates a random graph with `n` nodes using the [Barabási-Albert][ba] model. The process
 /// starts with a star graph of `m + 1` nodes or an initial graph given by the `initial_graph`
@@ -15,9 +14,10 @@ use rand::Rng;
 /// # Examples
 /// ```
 /// use petgraph::Graph;
-/// use petgraph_gen::barabasi_albert_graph;
+/// use petgraph_gen::{barabasi_albert_graph, rand};
+/// use rand::rngs::SmallRng;
 ///
-/// let mut rng = rand::thread_rng();
+/// let mut rng: SmallRng = rand::make_rng();
 /// let graph: Graph<(), ()> = barabasi_albert_graph(&mut rng, 100, 3, None);
 /// assert_eq!(graph.node_count(), 100);
 /// assert_eq!(graph.edge_count(), 291);
@@ -75,7 +75,7 @@ pub fn barabasi_albert_graph<
 
     for _ in initial_node_count..n {
         let node = graph.add_node(());
-        let uniform_distribution = Uniform::new(0, repeated_nodes.len());
+        let uniform_distribution = Uniform::new(0, repeated_nodes.len()).unwrap();
 
         let mut i = 0;
         while i < m {
@@ -103,11 +103,10 @@ mod tests {
     use crate::{complete_graph, empty_graph};
     use petgraph::graph::DiGraph;
     use rand::prelude::SmallRng;
-    use rand::SeedableRng;
 
     #[test]
     fn test_directed_barabasi_albert_graph_nodes_have_at_most_m_outgoing_edges() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let graph: DiGraph<(), ()> = barabasi_albert_graph(&mut rng, 100, 3, None);
         graph.node_indices().for_each(|node| {
             let outgoing_edges = graph.edges_directed(node, petgraph::Outgoing).count();
@@ -117,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_directed_barabasi_albert_graph_with_initial_graph() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let graph: DiGraph<(), ()> = barabasi_albert_graph(&mut rng, 100, 3, complete_graph(4));
         assert_eq!(graph.node_count(), 100);
         assert_eq!(graph.edge_count(), 300);
@@ -129,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_barabasi_albert_graph_with_maximum_sized_initial_graph() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let star_graph: Graph<(), ()> = barabasi_albert_graph(&mut rng, 5, 4, star_graph(4));
         assert_eq!(star_graph.node_count(), 5);
         assert_eq!(star_graph.edge_count(), 4);
@@ -139,35 +138,35 @@ mod tests {
     #[test]
     #[should_panic(expected = "m must be greater than 0")]
     fn test_barabasi_albert_graph_panics_if_m_equals_0() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let _: Graph<(), ()> = barabasi_albert_graph(&mut rng, 5, 0, None);
     }
 
     #[test]
     #[should_panic(expected = "m must be less than n")]
     fn test_barabasi_albert_graph_panics_if_m_is_greater_than_or_equal_to_n() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let _: Graph<(), ()> = barabasi_albert_graph(&mut rng, 5, 5, None);
     }
 
     #[test]
     #[should_panic(expected = "must have at least one edge")]
     fn test_barabasi_albert_graph_panics_if_initial_graph_has_no_edges() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let _: Graph<(), ()> = barabasi_albert_graph(&mut rng, 5, 3, empty_graph(3));
     }
 
     #[test]
     #[should_panic(expected = "must have at least m nodes")]
     fn test_barabasi_albert_graph_panics_if_initial_graph_has_less_than_m_nodes() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let _: Graph<(), ()> = barabasi_albert_graph(&mut rng, 5, 3, complete_graph(2));
     }
 
     #[test]
     #[should_panic(expected = "must have at most n nodes")]
     fn test_barabasi_albert_graph_panics_if_initial_graph_has_more_than_n_nodes() {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng: SmallRng = rand::make_rng();
         let _: Graph<(), ()> = barabasi_albert_graph(&mut rng, 5, 3, complete_graph(6));
     }
 }
